@@ -31,6 +31,7 @@ import {
 } from './util';
 import { getLogger, logPrint } from './log';
 import { MatchingFunc } from './rbac';
+import { EnforceContext } from './enforceContext';
 
 type Matcher = ((context: any) => Promise<any>) | ((context: any) => any);
 
@@ -176,17 +177,35 @@ export class CoreEnforcer {
   }
 
   public sortPolicies(): void {
-    const policy = this.model.model.get('p')?.get('p')?.policy;
-    const tokens = this.model.model.get('p')?.get('p')?.tokens;
+    const ps = this.model.model.get('p');
+    if (ps) {
+      for (const ptype of ps.keys()) {
+        const policy = ps.get(ptype)?.policy;
+        const tokens = ps.get(ptype)?.tokens;
 
-    if (policy && tokens) {
-      const priorityIndex = tokens.indexOf('p_priority');
-      if (priorityIndex !== -1) {
-        policy.sort((a, b) => {
-          return parseInt(a[priorityIndex], 10) - parseInt(b[priorityIndex], 10);
-        });
+        if (policy && tokens) {
+          const priorityIndex = tokens.indexOf('p_priority');
+          if (priorityIndex !== -1) {
+            policy.sort((a, b) => {
+              return (
+                parseInt(a[priorityIndex], 10) - parseInt(b[priorityIndex], 10)
+              );
+            });
+          }
+        }
       }
     }
+    // const policy = this.model.model.get('p')?.get('p')?.policy;
+    // const tokens = this.model.model.get('p')?.get('p')?.tokens;
+
+    // if (policy && tokens) {
+    //   const priorityIndex = tokens.indexOf('p_priority');
+    //   if (priorityIndex !== -1) {
+    //     policy.sort((a, b) => {
+    //       return parseInt(a[priorityIndex], 10) - parseInt(b[priorityIndex], 10);
+    //     });
+    //   }
+    // }
   }
 
   /**
@@ -368,7 +387,7 @@ export class CoreEnforcer {
     }
   }
 
-  private *privateEnforce(asyncCompile = true, explain = false, ...rvals: any[]): EnforceResult {
+  private *privateEnforce(asyncCompile = true, explain = false, enforceContext: EnforceContext, ...rvals: any[]): EnforceResult {
     if (!this.enabled) {
       return true;
     }
@@ -387,12 +406,12 @@ export class CoreEnforcer {
       functions[key] = generateGFunction(rm);
     });
 
-    const expString = this.model.model.get('m')?.get('m')?.value;
+    const expString = this.model.model.get('m')?.get(enforceContext.mtype)?.value;
     if (!expString) {
       throw new Error('Unable to find matchers in model');
     }
 
-    const effectExpr = this.model.model.get('e')?.get('e')?.value;
+    const effectExpr = this.model.model.get('e')?.get(enforceContext.etype)?.value;
     if (!effectExpr) {
       throw new Error('Unable to find policy_effect in model');
     }
@@ -400,10 +419,10 @@ export class CoreEnforcer {
     const HasEval: boolean = hasEval(expString);
     let expression: Matcher | undefined = undefined;
 
-    const p = this.model.model.get('p')?.get('p');
+    const p = this.model.model.get('p')?.get(enforceContext.ptype);
     const policyLen = p?.policy?.length;
 
-    const rTokens = this.model.model.get('r')?.get('r')?.tokens;
+    const rTokens = this.model.model.get('r')?.get(enforceContext.rtype)?.tokens;
     const rTokensLen = rTokens?.length;
 
     const effectStream = this.eft.newStream(effectExpr);
@@ -550,8 +569,8 @@ export class CoreEnforcer {
    *              of strings, can be class instances if ABAC is used.
    * @return whether to allow the request.
    */
-  public enforceSync(...rvals: any[]): boolean {
-    return generatorRunSync(this.privateEnforce(false, false, ...rvals));
+  public enforceSync(enforceContext: EnforceContext, ...rvals: any[]): boolean {
+    return generatorRunSync(this.privateEnforce(false, false, enforceContext, ...rvals));
   }
 
   /**
@@ -564,15 +583,15 @@ export class CoreEnforcer {
    *              of strings, can be class instances if ABAC is used.
    * @return whether to allow the request and the reason rule.
    */
-  public enforceExSync(...rvals: any[]): [boolean, string[]] {
-    return generatorRunSync(this.privateEnforce(false, true, ...rvals));
+  public enforceExSync(enforceContext: EnforceContext,...rvals: any[]): [boolean, string[]] {
+    return generatorRunSync(this.privateEnforce(false, true, enforceContext,...rvals));
   }
 
   /**
    * Same as enforceSync. To be removed.
    */
-  public enforceWithSyncCompile(...rvals: any[]): boolean {
-    return this.enforceSync(...rvals);
+  public enforceWithSyncCompile(enforceContext: EnforceContext,...rvals: any[]): boolean {
+    return this.enforceSync(enforceContext,...rvals);
   }
 
   /**
@@ -583,8 +602,8 @@ export class CoreEnforcer {
    *              of strings, can be class instances if ABAC is used.
    * @return whether to allow the request.
    */
-  public async enforce(...rvals: any[]): Promise<boolean> {
-    return generatorRunAsync(this.privateEnforce(true, false, ...rvals));
+  public async enforce(enforceContext: EnforceContext,...rvals: any[]): Promise<boolean> {
+    return generatorRunAsync(this.privateEnforce(true, false, enforceContext,...rvals));
   }
 
   /**
@@ -595,8 +614,8 @@ export class CoreEnforcer {
    *              of strings, can be class instances if ABAC is used.
    * @return whether to allow the request and the reason rule.
    */
-  public async enforceEx(...rvals: any[]): Promise<[boolean, string[]]> {
-    return generatorRunAsync(this.privateEnforce(true, true, ...rvals));
+  public async enforceEx(enforceContext: EnforceContext,...rvals: any[]): Promise<[boolean, string[]]> {
+    return generatorRunAsync(this.privateEnforce(true, true, enforceContext,...rvals));
   }
 
   /**
@@ -605,7 +624,7 @@ export class CoreEnforcer {
    *              of array of strings, can be class instances if ABAC is used.
    * @returns whether to allow the requests.
    */
-  public async batchEnforce(rvals: any[]): Promise<boolean[]> {
-    return await Promise.all(rvals.map((rval) => this.enforce(...rval)));
+  public async batchEnforce(enforceContext: EnforceContext,rvals: any[]): Promise<boolean[]> {
+    return await Promise.all(rvals.map((rval) => this.enforce(enforceContext,...rval)));
   }
 }

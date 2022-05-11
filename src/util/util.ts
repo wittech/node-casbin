@@ -17,8 +17,9 @@ import * as fs from 'fs';
 // escapeAssertion escapes the dots in the assertion,
 // because the expression evaluation doesn't support such variable names.
 function escapeAssertion(s: string): string {
-  s = s.replace(/r\./g, 'r_');
-  s = s.replace(/p\./g, 'p_');
+  //TODO:修复r2.act=p2.act，无法将这个的点替换为下划线，导致无法使用mutipolicy
+  s = s.replace(/(r\d*)\./g, '$1_');
+  s = s.replace(/(p\d*)\./g, '$1_');
   return s;
 }
 
