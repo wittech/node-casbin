@@ -1,3 +1,31 @@
+# [5.18.0](https://github.com/casbin/node-casbin/compare/v5.17.0...v5.18.0) (2022-09-14)
+
+
+### Features
+
+* add management api for watcherEx callbacks ([#384](https://github.com/casbin/node-casbin/issues/384)) ([591233f](https://github.com/casbin/node-casbin/commit/591233f4b80dec422a7dc299c605f7a0e22dba9f))
+
+# [5.17.0](https://github.com/casbin/node-casbin/compare/v5.16.0...v5.17.0) (2022-08-18)
+
+
+### Features
+
+* add WatcherEx ([#381](https://github.com/casbin/node-casbin/issues/381)) ([10d7086](https://github.com/casbin/node-casbin/commit/10d7086c810ff18d9a3c792a3ec1173744bceeef))
+
+# [5.16.0](https://github.com/casbin/node-casbin/compare/v5.15.2...v5.16.0) (2022-08-11)
+
+
+### Features
+
+* add support for g() in SyncedEnforcer ([#378](https://github.com/casbin/node-casbin/issues/378)) ([a74067a](https://github.com/casbin/node-casbin/commit/a74067a66aec755e89bd32964e9da4252c117881))
+
+## [5.15.2](https://github.com/casbin/node-casbin/compare/v5.15.1...v5.15.2) (2022-06-22)
+
+
+### Bug Fixes
+
+* enable esModuleInterop support ([#366](https://github.com/casbin/node-casbin/issues/366)) ([20db339](https://github.com/casbin/node-casbin/commit/20db3390ef70656b8e06a6738d4c377b4dbe5017))
+
 ## [5.15.1](https://github.com/casbin/node-casbin/compare/v5.15.0...v5.15.1) (2022-04-27)
 
 
